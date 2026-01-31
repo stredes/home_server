@@ -1,0 +1,114 @@
+// Prisma schema para el sistema de descargas
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String      @map("password_hash")
+  nombre       String
+  estado       UserStatus  @default(ACTIVE)
+  createdAt    DateTime    @default(now()) @map("created_at")
+
+  roles        UserRole[]
+  files        File[]      @relation("UserFiles")
+  downloads    Download[]
+  auditLogs    AuditLog[]  @relation("UserAuditLogs")
+
+  @@map("users")
+}
+
+model Role {
+  id   String @id @default(uuid())
+  name String @unique
+
+  users          UserRole[]
+  filePermissions FilePermission[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model File {
+  id           String   @id @default(uuid())
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  checksum     String
+  storagePath  String   @map("storage_path")
+  version      Int      @default(1)
+  tags         String[]
+  isActive     Boolean  @default(true) @map("is_active")
+  expiresAt    DateTime? @map("expires_at")
+  createdById  String   @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  createdBy   User             @relation("UserFiles", fields: [createdById], references: [id])
+  permissions FilePermission[]
+  downloads   Download[]
+
+  @@map("files")
+}
+
+model FilePermission {
+  fileId String @map("file_id")
+  roleId String @map("role_id")
+
+  file File @relation(fields: [fileId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([fileId, roleId])
+  @@map("file_permissions")
+}
+
+model Download {
+  id           String   @id @default(uuid())
+  fileId       String   @map("file_id")
+  userId       String   @map("user_id")
+  downloadedAt DateTime @default(now()) @map("downloaded_at")
+  ip           String
+  userAgent    String   @map("user_agent")
+
+  file File @relation(fields: [fileId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("downloads")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String   @map("actor_user_id")
+  action      String
+  entity      String
+  entityId    String?  @map("entity_id")
+  metaJson    Json     @map("meta_json")
+  ip          String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor User @relation("UserAuditLogs", fields: [actorUserId], references: [id])
+
+  @@map("audit_logs")
+}

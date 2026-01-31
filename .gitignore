@@ -1,0 +1,34 @@
+# Node/Nest build artifacts
+/server/dist
+/server/build
+/server/coverage
+/server/.nyc_output
+
+# Dependencies
+/server/node_modules
+
+# Environment files
+/server/.env
+/server/.env.*
+!/server/.env.example
+
+# Logs
+/server/npm-debug.log*
+/server/yarn-debug.log*
+/server/yarn-error.log*
+/server/pnpm-debug.log*
+/server/logs
+/server/*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Prisma
+/server/prisma/dev.db
+/server/prisma/dev.db-journal
+
+# Misc
+*.tgz
