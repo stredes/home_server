@@ -1,5 +1,5 @@
 import { Body, Controller, Post, Req, Res, UseInterceptors } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Audit } from '../audit/audit.decorator';

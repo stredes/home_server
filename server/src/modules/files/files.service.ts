@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from './storage/storage.service';
 import { CreateFileDto } from './dto/create-file.dto';
 import { createHash } from 'node:crypto';
+import type { StringValue } from 'ms';
 
 @Injectable()
 export class FilesService {
@@ -112,7 +113,7 @@ export class FilesService {
     const payload = { fileId, userId };
     return this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('FILE_TOKEN_SECRET') || 'file_secret',
-      expiresIn: this.config.get<string>('FILE_TOKEN_EXPIRES_IN') || '10m',
+      expiresIn: (this.config.get<string>('FILE_TOKEN_EXPIRES_IN') || '10m') as StringValue,
     });
   }
 

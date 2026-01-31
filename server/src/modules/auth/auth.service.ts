@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { ConfigService } from '@nestjs/config';
+import type { StringValue } from 'ms';
 import { UsersService } from '../users/users.service';
 
 export interface JwtUser {
@@ -18,18 +19,31 @@ export class AuthService {
     private readonly usersService: UsersService,
   ) {}
 
+  private getRequiredConfig(key: string): string {
+    const value = this.config.get<string>(key);
+    if (!value) {
+      throw new Error(`${key} is not set`);
+    }
+    return value;
+  }
+
   // Firma tokens access y refresh.
   async signTokens(user: JwtUser) {
     const payload = { sub: user.id, email: user.email, roles: user.roles };
 
+    const accessSecret = this.getRequiredConfig('JWT_ACCESS_SECRET');
+    const refreshSecret = this.getRequiredConfig('JWT_REFRESH_SECRET');
+    const accessExpires = (this.config.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m') as StringValue;
+    const refreshExpires = (this.config.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d') as StringValue;
+
     const accessToken = await this.jwtService.signAsync(payload, {
-      secret: this.config.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.config.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m',
+      secret: accessSecret,
+      expiresIn: accessExpires,
     });
 
     const refreshToken = await this.jwtService.signAsync(payload, {
-      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.config.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+      secret: refreshSecret,
+      expiresIn: refreshExpires,
     });
 
     return { accessToken, refreshToken };
@@ -49,8 +63,9 @@ export class AuthService {
 
   // Verifica refresh token y firma nuevos tokens.
   async refreshTokens(refreshToken: string) {
+    const refreshSecret = this.getRequiredConfig('JWT_REFRESH_SECRET');
     const payload = await this.jwtService.verifyAsync(refreshToken, {
-      secret: this.config.get<string>('JWT_REFRESH_SECRET'),
+      secret: refreshSecret,
     });
 
     return this.signTokens({
